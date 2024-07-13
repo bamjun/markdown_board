@@ -1,0 +1,44 @@
+<!-- a_board/templates/a_board/post_form.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{% if post.id %}Edit Post{% else %}Create Post{% endif %}</title>
+    <script src="https://unpkg.com/htmx.org@1.4.1"></script>
+</head>
+<body>
+    <h1>{% if post.id %}Edit Post{% else %}Create Post{% endif %}</h1>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <input type="hidden" name="image_ids" id="image_ids" value="{{ post.image_list|default:"[]" }}" />
+        <button type="submit">Save</button>
+    </form>
+    <script>
+        document.addEventListener('paste', function (event) {
+            var items = (event.clipboardData || event.originalEvent.clipboardData).items;
+            for (index in items) {
+                var item = items[index];
+                if (item.kind === 'file') {
+                    var blob = item.getAsFile();
+                    var formData = new FormData();
+                    formData.append('file', blob);
+                    fetch('{% url "upload_image" %}', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        }
+                    }).then(response => response.json()).then(data => {
+                        var textarea = document.querySelector('textarea');
+                        textarea.value += `![image](${data.url})`;
+                        var imageIds = document.getElementById('image_ids');
+                        var currentIds = JSON.parse(imageIds.value);
+                        currentIds.push(data.id);
+                        imageIds.value = JSON.stringify(currentIds);
+                    });
+                }
+            }
+        });
+    </script>
+</body>
+</html>
