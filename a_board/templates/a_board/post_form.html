@@ -13,6 +13,8 @@
         <input type="hidden" name="image_ids" id="image_ids" value="{{ post.image_list|default:"[]" }}" />
         <button type="submit">Save</button>
     </form>
+    <h3>Upload Image</h3>
+    <input type="file" id="fileInput" multiple />
     <script>
         document.addEventListener('paste', function (event) {
             var items = (event.clipboardData || event.originalEvent.clipboardData).items;
@@ -20,25 +22,36 @@
                 var item = items[index];
                 if (item.kind === 'file') {
                     var blob = item.getAsFile();
-                    var formData = new FormData();
-                    formData.append('file', blob);
-                    fetch('{% url "upload_image" %}', {
-                        method: 'POST',
-                        body: formData,
-                        headers: {
-                            'X-CSRFToken': '{{ csrf_token }}'
-                        }
-                    }).then(response => response.json()).then(data => {
-                        var textarea = document.querySelector('textarea');
-                        textarea.value += `![image](${data.url})`;
-                        var imageIds = document.getElementById('image_ids');
-                        var currentIds = JSON.parse(imageIds.value);
-                        currentIds.push(data.id);
-                        imageIds.value = JSON.stringify(currentIds);
-                    });
+                    uploadFile(blob);
                 }
             }
         });
+
+        document.getElementById('fileInput').addEventListener('change', function (event) {
+            var files = event.target.files;
+            for (var i = 0; i < files.length; i++) {
+                uploadFile(files[i]);
+            }
+        });
+
+        function uploadFile(file) {
+            var formData = new FormData();
+            formData.append('file', file);
+            fetch('{% url "upload_image" %}', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            }).then(response => response.json()).then(data => {
+                var textarea = document.querySelector('textarea');
+                textarea.value += `![image](${data.url})`;
+                var imageIds = document.getElementById('image_ids');
+                var currentIds = JSON.parse(imageIds.value);
+                currentIds.push(data.id);
+                imageIds.value = JSON.stringify(currentIds);
+            });
+        }
     </script>
 </body>
 </html>
